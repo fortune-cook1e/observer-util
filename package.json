@@ -84,9 +84,5 @@
       "browser",
       "mocha"
     ]
-  },
-  "pre-push": [
-    "lint",
-    "test"
-  ]
+  }
 }
