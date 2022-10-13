@@ -14,13 +14,14 @@ const wellKnownSymbols = new Set(
 )
 
 // intercept get operations on observables to know which reaction uses their properties
-function get (target, key, receiver) {
+function get(target, key, receiver) {
   const result = Reflect.get(target, key, receiver)
   // do not register (observable.prop -> reaction) pairs for well known symbols
   // these symbols are frequently retrieved in low level JavaScript under the hood
   if (typeof key === 'symbol' && wellKnownSymbols.has(key)) {
     return result
   }
+
   // register and save (observable.prop -> runningReaction)
   registerRunningReactionForOperation({ target, key, receiver, type: 'get' })
   // if we are inside a reaction and observable.prop is an object wrap it in an observable too
@@ -33,31 +34,29 @@ function get (target, key, receiver) {
     // do not violate the none-configurable none-writable prop get handler invariant
     // fall back to none reactive mode in this case, instead of letting the Proxy throw a TypeError
     const descriptor = Reflect.getOwnPropertyDescriptor(target, key)
-    if (
-      !descriptor ||
-      !(descriptor.writable === false && descriptor.configurable === false)
-    ) {
+    if (!descriptor || !(descriptor.writable === false && descriptor.configurable === false)) {
       return observable(result)
     }
   }
+
   // otherwise return the observable wrapper if it is already created and cached or the raw object
   return observableResult || result
 }
 
-function has (target, key) {
+function has(target, key) {
   const result = Reflect.has(target, key)
   // register and save (observable.prop -> runningReaction)
   registerRunningReactionForOperation({ target, key, type: 'has' })
   return result
 }
 
-function ownKeys (target) {
+function ownKeys(target) {
   registerRunningReactionForOperation({ target, type: 'iterate' })
   return Reflect.ownKeys(target)
 }
 
 // intercept set operations on observables to know when to trigger reactions
-function set (target, key, value, receiver) {
+function set(target, key, value, receiver) {
   // make sure to do not pollute the raw object with observables
   if (typeof value === 'object' && value !== null) {
     value = proxyToRaw.get(value) || value
@@ -89,7 +88,7 @@ function set (target, key, value, receiver) {
   return result
 }
 
-function deleteProperty (target, key) {
+function deleteProperty(target, key) {
   // save if the object had the key
   const hadKey = hasOwnProperty.call(target, key)
   const oldValue = target[key]

@@ -3,7 +3,7 @@ import { storeObservable } from './store'
 import * as builtIns from './builtIns'
 import baseHandlers from './handlers'
 
-export function observable (obj = {}) {
+export function observable(obj = {}) {
   // if it is already an observable or it should not be wrapped, return it
   if (proxyToRaw.has(obj) || !builtIns.shouldInstrument(obj)) {
     return obj
@@ -13,7 +13,7 @@ export function observable (obj = {}) {
   return rawToProxy.get(obj) || createObservable(obj)
 }
 
-function createObservable (obj) {
+function createObservable(obj) {
   // if it is a complex built-in object or a normal object, wrap it
   const handlers = builtIns.getHandlers(obj) || baseHandlers
   const observable = new Proxy(obj, handlers)
@@ -21,14 +21,15 @@ function createObservable (obj) {
   rawToProxy.set(obj, observable)
   proxyToRaw.set(observable, obj)
   // init basic data structures to save and cleanup later (observable.prop -> reaction) connections
+  // 给target初始化一个map，key为属性，value为 key 对应的 reaction 执行函数
   storeObservable(obj)
   return observable
 }
 
-export function isObservable (obj) {
+export function isObservable(obj) {
   return proxyToRaw.has(obj)
 }
 
-export function raw (obj) {
+export function raw(obj) {
   return proxyToRaw.get(obj) || obj
 }

@@ -1,18 +1,21 @@
 const connectionStore = new WeakMap()
 const ITERATION_KEY = Symbol('iteration key')
 
-export function storeObservable (obj) {
+export function storeObservable(obj) {
   // this will be used to save (obj.key -> reaction) connections later
   connectionStore.set(obj, new Map())
 }
 
-export function registerReactionForOperation (reaction, { target, key, type }) {
+export function registerReactionForOperation(reaction, { target, key, type }) {
   if (type === 'iterate') {
     key = ITERATION_KEY
   }
 
   const reactionsForObj = connectionStore.get(target)
-  let reactionsForKey = reactionsForObj.get(key)
+  let reactionsForKey = reactionsForObj.get(key) // Set 结构
+
+  // 如果在当前target的map中没有找到相关 key 对应的 reaction 则初始化一个 Set
+  // reactionsForKey 存储的是当前target 的key 对应的所有reaction函数
   if (!reactionsForKey) {
     reactionsForKey = new Set()
     reactionsForObj.set(key, reactionsForKey)
@@ -24,7 +27,7 @@ export function registerReactionForOperation (reaction, { target, key, type }) {
   }
 }
 
-export function getReactionsForOperation ({ target, key, type }) {
+export function getReactionsForOperation({ target, key, type }) {
   const reactionsForTarget = connectionStore.get(target)
   const reactionsForKey = new Set()
 
@@ -44,18 +47,18 @@ export function getReactionsForOperation ({ target, key, type }) {
   return reactionsForKey
 }
 
-function addReactionsForKey (reactionsForKey, reactionsForTarget, key) {
+function addReactionsForKey(reactionsForKey, reactionsForTarget, key) {
   const reactions = reactionsForTarget.get(key)
   reactions && reactions.forEach(reactionsForKey.add, reactionsForKey)
 }
 
-export function releaseReaction (reaction) {
+export function releaseReaction(reaction) {
   if (reaction.cleaners) {
     reaction.cleaners.forEach(releaseReactionKeyConnection, reaction)
   }
   reaction.cleaners = []
 }
 
-function releaseReactionKeyConnection (reactionsForKey) {
+function releaseReactionKeyConnection(reactionsForKey) {
   reactionsForKey.delete(this)
 }
